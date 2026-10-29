@@ -1,0 +1,27 @@
+
+# Python virtual environment
+.venv/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Packaging
+*.egg-info/
+build/
+dist/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Local datasets and generated files
+data/raw/
+data/processed/
+
+# IDE and macOS
+.DS_Store
+.vscode/
+.idea/
