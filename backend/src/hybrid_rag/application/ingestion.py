@@ -5,6 +5,10 @@ from typing import Protocol
 
 from hybrid_rag.application.chunking import TextChunker
 from hybrid_rag.domain.document import DocumentChunk, DocumentPage
+from hybrid_rag.domain.identity import (
+    DocumentIdentity,
+    create_document_identity,
+)
 
 
 class DocumentParser(Protocol):
@@ -18,9 +22,17 @@ class DocumentParser(Protocol):
 
 @dataclass(frozen=True)
 class IngestionResult:
-    document_id: str
+    identity: DocumentIdentity
     filename: str
     chunks: tuple[DocumentChunk, ...]
+
+    @property
+    def document_id(self) -> str:
+        return self.identity.document_id
+
+    @property
+    def content_hash(self) -> str:
+        return self.identity.content_hash
 
     @property
     def chunk_count(self) -> int:
@@ -46,10 +58,24 @@ class DocumentIngestionService:
         if not document_id.strip():
             raise ValueError("document_id cannot be empty")
 
+        identity = create_document_identity(
+            file_path=path,
+            document_id=document_id,
+        )
+
         pages = self.parser.parse(
             file_path=path,
             document_id=document_id,
         )
+
+        if any(
+            page.document_id != document_id
+            for page in pages
+        ):
+            raise ValueError(
+                "Parser returned pages belonging "
+                "to a different document"
+            )
 
         chunks = self.chunker.chunk(pages)
 
@@ -59,7 +85,7 @@ class DocumentIngestionService:
             )
 
         return IngestionResult(
-            document_id=document_id,
+            identity=identity,
             filename=path.name,
             chunks=tuple(chunks),
         )

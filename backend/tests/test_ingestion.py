@@ -42,7 +42,14 @@ def make_service(
     )
 
 
-def test_ingestion_returns_chunks():
+@pytest.fixture
+def sample_file(tmp_path):
+    path = tmp_path / "policy.pdf"
+    path.write_bytes(b"Example document contents")
+    return path
+
+
+def test_ingestion_returns_chunks(sample_file):
     pages = [
         DocumentPage(
             document_id="doc-001",
@@ -54,7 +61,7 @@ def test_ingestion_returns_chunks():
     service = make_service(pages)
 
     result = service.ingest(
-        "policy.pdf",
+        sample_file,
         document_id="doc-001",
     )
 
@@ -62,9 +69,10 @@ def test_ingestion_returns_chunks():
     assert result.filename == "policy.pdf"
     assert result.chunk_count == 1
     assert result.chunks[0].page_number == 1
+    assert len(result.content_hash) == 64
 
 
-def test_ingestion_preserves_multiple_pages():
+def test_ingestion_preserves_multiple_pages(sample_file):
     pages = [
         DocumentPage(
             document_id="doc-001",
@@ -81,7 +89,7 @@ def test_ingestion_preserves_multiple_pages():
     service = make_service(pages)
 
     result = service.ingest(
-        "policy.pdf",
+        sample_file,
         document_id="doc-001",
     )
 
@@ -89,7 +97,7 @@ def test_ingestion_preserves_multiple_pages():
     assert [c.page_number for c in result.chunks] == [1, 3]
 
 
-def test_ingestion_rejects_empty_documents():
+def test_ingestion_rejects_empty_documents(sample_file):
     service = make_service([])
 
     with pytest.raises(
@@ -97,12 +105,12 @@ def test_ingestion_rejects_empty_documents():
         match="no extractable text",
     ):
         service.ingest(
-            "empty.pdf",
+            sample_file,
             document_id="doc-001",
         )
 
 
-def test_ingestion_rejects_empty_document_id():
+def test_ingestion_rejects_empty_document_id(sample_file):
     service = make_service([])
 
     with pytest.raises(
@@ -110,12 +118,12 @@ def test_ingestion_rejects_empty_document_id():
         match="document_id cannot be empty",
     ):
         service.ingest(
-            "policy.pdf",
+            sample_file,
             document_id="",
         )
 
 
-def test_ingestion_is_deterministic():
+def test_ingestion_is_deterministic(sample_file):
     pages = [
         DocumentPage(
             document_id="doc-001",
@@ -126,7 +134,50 @@ def test_ingestion_is_deterministic():
 
     service = make_service(pages)
 
-    first = service.ingest("policy.pdf", "doc-001")
-    second = service.ingest("policy.pdf", "doc-001")
+    first = service.ingest(sample_file, "doc-001")
+    second = service.ingest(sample_file, "doc-001")
 
+    assert first.identity == second.identity
     assert first.chunks == second.chunks
+
+
+def test_ingestion_rejects_mismatched_document_id(sample_file):
+    pages = [
+        DocumentPage(
+            document_id="another-document",
+            page_number=1,
+            text="Some document text.",
+        )
+    ]
+
+    service = make_service(pages)
+
+    with pytest.raises(
+        ValueError,
+        match="different document",
+    ):
+        service.ingest(
+            sample_file,
+            document_id="doc-001",
+        )
+
+
+def test_ingestion_hash_changes_when_file_changes(sample_file):
+    pages = [
+        DocumentPage(
+            document_id="doc-001",
+            page_number=1,
+            text="Some document text.",
+        )
+    ]
+
+    service = make_service(pages)
+
+    first = service.ingest(sample_file, "doc-001")
+
+    sample_file.write_bytes(b"Updated document contents")
+
+    second = service.ingest(sample_file, "doc-001")
+
+    assert first.content_hash != second.content_hash
+    assert first.document_id == second.document_id
