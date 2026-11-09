@@ -1,0 +1,65 @@
+
+[
+  {
+    "query_id": "q001",
+    "query": "How many vacation days do employees get?",
+    "relevant_chunk_ids": ["leave-001"]
+  },
+  {
+    "query_id": "q002",
+    "query": "Who approves annual leave requests?",
+    "relevant_chunk_ids": ["leave-002"]
+  },
+  {
+    "query_id": "q003",
+    "query": "Is two-factor authentication required?",
+    "relevant_chunk_ids": ["security-001"]
+  },
+  {
+    "query_id": "q004",
+    "query": "Can employees work from home?",
+    "relevant_chunk_ids": ["remote-001"]
+  },
+  {
+    "query_id": "q005",
+    "query": "How soon must travel expenses be submitted?",
+    "relevant_chunk_ids": ["expenses-001"]
+  },
+  {
+    "query_id": "q006",
+    "query": "Does the company pay for professional development?",
+    "relevant_chunk_ids": ["training-001"]
+  },
+
+    {
+    "query_id": "q007",
+    "query": "Can unused vacation days be transferred to next year?",
+    "relevant_chunk_ids": ["leave-003"]
+    },
+    {
+    "query_id": "q008",
+    "query": "What does policy SEC-204 require?",
+    "relevant_chunk_ids": ["security-002"]
+    },
+    {
+    "query_id": "q009",
+    "query": "Which policy covers encrypting confidential laptop files?",
+    "relevant_chunk_ids": ["security-003"]
+    },
+    {
+    "query_id": "q010",
+    "query": "What expenses are covered by FIN-301?",
+    "relevant_chunk_ids": ["expenses-002"]
+    },
+    {
+    "query_id": "q011",
+    "query": "Do remote employees have to be reachable during work hours?",
+    "relevant_chunk_ids": ["remote-002"]
+    },
+    {
+    "query_id": "q012",
+    "query": "When must employees request funding for a course?",
+    "relevant_chunk_ids": ["training-002"]
+    }
+
+]

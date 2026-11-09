@@ -6,6 +6,9 @@ from hybrid_rag.infrastructure.vector_index import (
     InMemoryVectorIndex,
     cosine_similarity,
 )
+from hybrid_rag.domain.document import DocumentChunk
+from hybrid_rag.domain.embedding import EmbeddedChunk
+from hybrid_rag.infrastructure.vector_index import InMemoryVectorIndex
 
 
 def make_chunk(chunk_id: str, text: str) -> DocumentChunk:
@@ -138,3 +141,104 @@ def test_vector_index_rejects_invalid_top_k():
 
     with pytest.raises(ValueError, match="top_k"):
         index.search([1.0, 0.0], top_k=0)
+
+
+def test_delete_removes_existing_vector():
+    index = InMemoryVectorIndex(dimensions=3)
+
+    chunk = DocumentChunk(
+        chunk_id="chunk-001",
+        document_id="doc-001",
+        text="Annual leave policy",
+        chunk_index=0,
+        page_number=1,
+    )
+
+    embedding = EmbeddedChunk(
+        chunk_id="chunk-001",
+        vector=(1.0, 0.0, 0.0),
+    )
+
+    index.add([chunk], [embedding])
+    index.delete(["chunk-001"])
+
+    assert index.search([1.0, 0.0, 0.0]) == []
+
+
+def test_delete_preserves_unrelated_vectors():
+    index = InMemoryVectorIndex(dimensions=3)
+
+    first = DocumentChunk(
+        chunk_id="chunk-001",
+        document_id="doc-001",
+        text="Annual leave policy",
+        chunk_index=0,
+        page_number=1,
+    )
+
+    second = DocumentChunk(
+        chunk_id="chunk-002",
+        document_id="doc-002",
+        text="Security policy",
+        chunk_index=0,
+        page_number=1,
+    )
+
+    embeddings = [
+        EmbeddedChunk(
+            chunk_id="chunk-001",
+            vector=(1.0, 0.0, 0.0),
+        ),
+        EmbeddedChunk(
+            chunk_id="chunk-002",
+            vector=(0.0, 1.0, 0.0),
+        ),
+    ]
+
+    index.add([first, second], embeddings)
+    index.delete(["chunk-001"])
+
+    results = index.search([0.0, 1.0, 0.0])
+
+    assert len(results) == 1
+    assert results[0].chunk.chunk_id == "chunk-002"
+
+
+def test_delete_missing_vector_is_safe():
+    index = InMemoryVectorIndex(dimensions=3)
+
+    index.delete(["missing-chunk"])
+
+    assert index.search([1.0, 0.0, 0.0]) == []
+
+
+def test_delete_multiple_vectors():
+    index = InMemoryVectorIndex(dimensions=3)
+
+    chunks = [
+        DocumentChunk(
+            chunk_id=f"chunk-{i}",
+            document_id="doc-001",
+            text=f"Policy {i}",
+            chunk_index=i,
+            page_number=1,
+        )
+        for i in range(3)
+    ]
+
+    embeddings = [
+        EmbeddedChunk(
+            chunk_id=chunk.chunk_id,
+            vector=(1.0, 0.0, 0.0),
+        )
+        for chunk in chunks
+    ]
+
+    index.add(chunks, embeddings)
+
+    index.delete(["chunk-0", "chunk-1"])
+
+    results = index.search([1.0, 0.0, 0.0])
+
+    assert len(results) == 1
+    assert results[0].chunk.chunk_id == "chunk-2"

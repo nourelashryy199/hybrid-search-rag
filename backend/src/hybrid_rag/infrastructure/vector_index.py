@@ -62,6 +62,11 @@ class InMemoryVectorIndex:
 
         self._entries.update(pending)
 
+    def delete(self, chunk_ids: list[str]) -> None:
+        for chunk_id in chunk_ids:
+            self._entries.pop(chunk_id, None)
+
+
     def search(
         self,
         query_vector: list[float],

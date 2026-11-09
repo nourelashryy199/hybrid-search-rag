@@ -20,6 +20,11 @@ dist/
 # Local datasets and generated files
 data/raw/
 data/processed/
+# Qdrant local persistent storage
+data/qdrant_storage/
+# Local SQLite document metadata
+data/*.db
+data/*.db-*
 
 # IDE and macOS
 .DS_Store
